@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      target: build
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - .:/home/node/app
+      - /home/node/app/node_modules
+      - /home/node/app/dist
+    env_file:
+      - .env
+    command: ["npm", "run", "dev"]
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP
+
+  stripe:
+    image: stripe/stripe-cli
+    ports:
+      - "4242:4242"
+    command:
+      [
+        "listen",
+        "--api-key",
+        "${STRIPE_SECRET_KEY}",
+        "--forward-to",
+        "app:3000/webhook",
+      ]
+    environment:
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
